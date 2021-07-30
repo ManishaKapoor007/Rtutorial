@@ -1,0 +1,180 @@
+---
+title: "Perceptual Mapping_brand rating data_MK1705"
+author: "Manisha Kapoor"
+date: "17/05/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+##**1.Principal Component Analysis** 
+This data is typical of consumer brand perceptions.  This data reﬂects consumer ratings of brands with regard to perceptual adjectives as expressed on survey items with the following form:
+On a scale from 1 to 10—where 1 is least and 10 is most—how [ADJECTIVE] is [BRAND A]? 
+In this data, an observation is one respondent’s rating of a brand on one of the adjectives. Two such items might be: 
+
+1. How trendy is Intelligentsia Coffee?
+2. How much of a category leader is Blue Bottle Coffee?
+
+Such ratings are collected for all the combinations of adjectives and brands of interest. The data here comprise simulated ratings of 10 brands (“a” to “j”) on 9 adjectives (“performance,” “leader,” “latest,” “fun,” and so forth), for N = 100 simulated respondents.
+
+```{r}
+brand.ratings <- read.csv("http://goo.gl/IQl8nc")
+head(brand.ratings)
+tail(brand.ratings)
+```
+
+Each of the 100 simulated respondents has observations on each of the 10 brands, so there are 1,000 total rows.
+
+```{r}
+summary(brand.ratings)
+str(brand.ratings)
+```
+There are nine perceptual adjectives in this data set. Table below lists the adjectives and the kind of survey text that they might reﬂect.
+
+We can see in summary()that the ranges of the ratings for each adjective are 1-10. In str(), we see that the ratings were read as numeric while the brand labels were properly interpreted as factors.
+
+There are nine perceptual adjectives in this data set. Table lists the adjectives and the kind of survey text that they might reﬂect.
+
+Perceptual  adjective  | Example survey text
+---------------------- | -------------
+perform                | Brand has strong performance
+leader                 | Brand is a leader in the ﬁeld
+latest                 | Brand has the latest products
+fun                    | Brand is fun
+serious                | Brand is serious
+bargain                | Brand products are a bargain
+value                  | Brand products are a good value
+trendy                 | Brand is trendy
+rebuy                  | I would buy from Brand again
+
+**1.1 Rescaling the data**
+
+```{r}
+brand.sc <- brand.ratings #don't want to alter raw data
+brand.sc[,1:9] <- scale(brand.ratings[, 1:9])
+summary(brand.sc) 
+
+#we have taken only 9 columns because 10th column brand name is a factor
+#Note that after scaling the mean is zero
+```
+
+
+**1.2 corrplot() to inspect bivariate relationships among variables**
+
+```{r}
+install.packages("corrplot")
+library(corrplot)
+corrplot(cor(brand.sc[, 1:9]), order="hclust")
+#In corrplot(), the argument order="hclust" reorders the rows and columns according to variables’ similarity in a hierarchical cluster solution 
+```
+
+Dark blue of spectrum indicates very strong positive correlation whereas dark red indicates very strong negative corelation. Size and colour indicates the intensity of correlation. 
+
+You tube video Learning R in RStudio: corrplot ---> https://www.youtube.com/watch?v=jxUiIFj2l-s
+
+**1.3 Aggregate Mean ratings by brand**
+“What is the average (mean) position of the brand on each adjective?
+
+```{r}
+#We will use aggregate function to find the mean of each variable by brand
+brand.mean <- aggregate(.~brand, data=brand.sc, mean)
+brand.mean
+
+```
+
+**1.4 Creating Matrix with brand names as rows**
+
+```{r}
+rownames(brand.mean) <- brand.mean[, 1] # use brand for the row names
+
+brand.mean <- brand.mean[,-1] # remove brand name column
+brand.mean
+```
+
+
+**1.5 Creating heatmap for visualization of brand means data**
+
+```{r}
+install.packages("gplots")
+install.packages("RColorBrewer")
+library(gplots)
+library(RColorBrewer)
+heatmap.2(as.matrix(brand.mean), 
+col=brewer.pal(9, "GnBu"), trace="none", key=FALSE, dend="none",  main="\n\n\n\n\nBrand attributes")
+```
+
+**1.6 PCA for brand ratings**
+
+```{r}
+brand.pc <- prcomp(brand.sc[, 1:9])
+summary(brand.pc)  
+
+```
+
+
+**1.7 Screeplot on PCA for brand ratings**
+The default plot() for a PCA is ascree plot, which shows the successive proportion of additional variance that each component adds. We plot this as a line chart using type="l" (lower case “L” for line):
+
+```{r}
+plot(brand.pc, type="l")#scree plot line chart
+
+```
+
+A scree plot is often interpreted as indicating where additional components are not worth the complexity; this occurs where the line has an elbow, a kink in the angle of bending, a somewhat subjective determination.
+
+The elbow occurs at either component three or four, depending on interpretation; and this suggests that the ﬁrst two or three components explain most of the variation in the observed brand ratings.
+
+**1.8 Running biplot of PCA for brand ratings on individual respondents**
+
+```{r}
+biplot(brand.pc)#biplot of first two factors/principal components
+```
+
+But there is a problem: the plot of individual respondents’ ratings is too dense and it does not tell us about the brand positions! A better solution is to perform PCA using aggregated ratings by brand. First we remind ourselves of the data that compiled the mean rating of each adjective by brand as we found above using aggregate()
+
+
+**1.9 Running PCA for brand ratings on mean**
+```{r}
+brand.mean 
+brand.mu.pc <- prcomp(brand.mean, scale=TRUE)
+summary(brand.mu.pc) 
+```
+
+In the call to prcomp(),we added scale=TRUE in order to rescale the data;even though the raw data was already rescaled, the aggregated means have a somewhat different scale than the standardized data itself. The results show that the ﬁrst two components account for 84 % of the explainable variance in the mean ratings, so we focus on interpreting results with regard to them.
+
+**2.0 Perceptual Map of the Brands**
+**2.1 Running biplot of PCA for brand ratings on mean**
+```{r}
+biplot(brand.mu.pc, main="Brand positioning", cex=c(1.5, 1))
+```
+
+What does the map tell us?
+First we interpret the adjective clusters and relationships and see four areas with well differentiated sets of adjectives and brands that are positioned in proximity. 
+Brands f and g are high on “value,” for instance, while a and j are relatively high on “fun,” which is opposite in direction from leadership adjectives (“leader” and “serious”). 
+
+With such a map, one might form questions and then refer to the underlying data to answer them. 
+
+For instance, suppose that you are the brand manager for brand e. What does the map tell you? 
+
+For one thing, your brand is in the center and thus appears not to be well-differentiated on any of the dimensions. That could be good or bad, depending on your strategic goals. If your goal is to be a safe brand that appeals to many consumers, then a relatively undifferentiated position like e could be desirable. 
+
+On the other hand, if you wish your brand to have a strong, differentiated perception, this ﬁnding would be unwanted (but important to know). What should you do about the position of your brand e? Again, it depends on the strategic goals. If you wish to increase differentiation, one possibility would be to take action to shift your brand in some direction on the map. Suppose you wanted to move in the direction of brand c. You could look at the speciﬁc differences from c in the data:
+
+```{r}
+brand.mean["c", ] - brand.mean["e", ]
+```
+
+This shows you that e is relatively stronger than c on “value” and “fun”, which suggests dialing down messaging or other attributes that reinforce those (assuming, of course, that you truly want to move in the direction of c). Similarly, c is stronger on “perform” and “serious,” so those could be aspects of the product or message for e to strengthen. Another option would be not to follow another brand but to aim for differentiated space where no brand is positioned. In Fig, there is a large gap between the group b and c on the bottom of the chart,versus f and g on the upper right.This area might be described as the “value leader” area or similar. How do we ﬁnd out how to position there? Let’s assume that the gap reﬂects approximately the average of those four brands (though there are some of the risks with this assumption). We can ﬁnd that average using colMeans() on the brands’ rows, and then take the difference of e from that average:
+
+```{r}
+colMeans(brand.mean[c("b", "c", "f", "g"), ]) - brand.mean["e", ]
+
+```
+
+This suggests that brand e could target the gap by increasing its emphasis on performance while reducing emphasis on “latest” and “fun.” 
+
+
+
+
+
