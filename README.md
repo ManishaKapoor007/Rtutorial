@@ -1,2 +1,2 @@
-# Rtutorial
-Basic operations in RMD file
+# R
+R Tutorial : Basic operations in RMD file
